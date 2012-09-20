@@ -1,0 +1,31 @@
+This is a basic ruby script that does monthly network scans and emails a report showing the differences found.  It has only basic error checking and you will need to edit it to set the right path and email info up, and edit the text file with the filenames and IPs to get it to work.  But once setup it does the job well.
+
+Required:
+Ruby 1.9
+fileutiles gem
+mail gem
+nmap installed
+ndiff installed (comes with nmap)
+The script must be ran with root privileges!
+All files other than the README are required to be in the same dir.
+
+Steps required to get it to work for you:
+Put all the files in a dir
+Edit the path variable in the script to be that dir
+Edit the email smtp options to be correct for you, or comment out the smtp delivery_method and uncomment the sendmail one if you use sendmail.
+Change the from and to in all three mail.new's
+change scandata from test.txt to your file or just use it if you like
+Edit the test.txt file (or whatever you set for scandata) to be the filename and IP's you want to scan like the format in test.txt.
+
+Optional:
+Edit the email subjects
+Edit the email body text, including the two txt files
+Edit the nmap_scan_ops and nmap_disc_ops to meet the kind of nmap scan you want
+Setup in a cron job to run monthly for you, remember it must be ran with root privileges
+
+Additional Work:
+The file checking is very basic.  It files exist in last month's dir it assumes all needed files are there.  Also if a file exists in this months dir it assumes the same file exists in last months dir unless that dir is empty or doesn't exist.  This could be greatly improved upon if needed.  Also no error logging exists in case something bad happens with the scan, etc.  This is a pretty simple script, and the extra error checking and file verification wasn't put in due to how simple it is to look at the files and see what is going on.  But you can add it easily if needed.  It could also be enhanced to allow for variable time such as daily scans.
+
+
+
+
