@@ -10,10 +10,10 @@ last_month = (Time.now.month - 1).to_s
 year = Time.now.year
 
 if this_month == 1
-	last_month_year = (year - 1).to_s
-	last_month = 12.to_s
+  last_month_year = (year - 1).to_s
+  last_month = 12.to_s
 else
-	last_month_year = year
+  last_month_year = year
 end
 
 #Setting path, dir, and file variables
@@ -64,69 +64,69 @@ nmap_out = "-oA"
 
 #Setting up dir for new data, moving existing files to an old dir if they already exist
 if current_data_exists.empty?
-	FileUtils.mkdir("#{this_month_dir}")
+  FileUtils.mkdir("#{this_month_dir}")
 else
-	File.directory?("#{this_month_dir}/old") ? "Old dir already exists, bad month?" : FileUtils.mkdir("#{this_month_dir}/old")
-	FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*nmap"), "#{this_month_dir}/old"
-	FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*xml"), "#{this_month_dir}/old"
-	FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*txt"), "#{this_month_dir}/old"
+  File.directory?("#{this_month_dir}/old") ? "Old dir already exists, bad month?" : FileUtils.mkdir("#{this_month_dir}/old")
+  FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*nmap"), "#{this_month_dir}/old"
+  FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*xml"), "#{this_month_dir}/old"
+  FileUtils.mv Dir.glob("#{path}/#{this_month}-#{year}/*txt"), "#{this_month_dir}/old"
 end
 
 #Doing the nmap scan
-scandata.each { |line| %x{nmap #{nmap_scan_ops} #{nmap_disc_ops} #{nmap_out} #{this_month_dir}/#{line}}}	
+scandata.each { |line| %x{nmap #{nmap_scan_ops} #{nmap_disc_ops} #{nmap_out} #{this_month_dir}/#{line}}}  
 
 #Dealing with the results
 unless old_data_exists.empty?
-	results_files = Dir.glob("#{this_month_dir}/*.nmap")
-	results_files.each do |line|
-		filename = line.split(/\//).reverse[0]
-		gfilename = filename.gsub("nmap", "gnmap")
-		#FileUtils.identical?("#{this_month_dir}/#{filename}", "#{last_month_dir}/#{filename}") ? "No change" : different_files << filename
-		#Dates and times made identical? not work on real data.
-		#Instead looked for changes in up and open in the gnmap file.
-		#And added an ndiff attachment to make sure nothing was missed.
-		o = File.read("#{last_month_dir}/#{gfilename}").scan(/.{10}up|.{10}open/).sort
-		n = File.read("#{this_month_dir}/#{gfilename}").scan(/.{10}up|.{10}open/).sort
-		o == n ? "No Change." : different_files << filename
-	end
-	xfiles = Dir.glob("#{this_month_dir}/*.xml")
-	xfiles.each do |line|
-		xfilename = line.split(/\//).reverse[0]
-		%x{ndiff #{this_month_dir}/#{xfilename} #{last_month_dir}/#{xfilename} >>#{this_month_dir}/ndiff.txt} 
-	end
+  results_files = Dir.glob("#{this_month_dir}/*.nmap")
+  results_files.each do |line|
+    filename = line.split(/\//).reverse[0]
+    gfilename = filename.gsub("nmap", "gnmap")
+    #FileUtils.identical?("#{this_month_dir}/#{filename}", "#{last_month_dir}/#{filename}") ? "No change" : different_files << filename
+    #Dates and times made identical? not work on real data.
+    #Instead looked for changes in up and open in the gnmap file.
+    #And added an ndiff attachment to make sure nothing was missed.
+    o = File.read("#{last_month_dir}/#{gfilename}").scan(/.{10}up|.{10}open/).sort
+    n = File.read("#{this_month_dir}/#{gfilename}").scan(/.{10}up|.{10}open/).sort
+    o == n ? "No Change." : different_files << filename
+  end
+  xfiles = Dir.glob("#{this_month_dir}/*.xml")
+  xfiles.each do |line|
+    xfilename = line.split(/\//).reverse[0]
+    %x{ndiff #{this_month_dir}/#{xfilename} #{last_month_dir}/#{xfilename} >>#{this_month_dir}/ndiff.txt} 
+  end
 else
 no_result_mail.deliver!
 exit
 end
 
 unless different_files.empty?
-	monthly_file = File.new("#{this_month_dir}/monthlyreport.txt", "a")
-	monthly_file.puts "Nmap Scan results for #{this_month}, #{year}."
-	monthly_file.puts "Different results from last month only."
-	different_files.each do |line|
-		monthly_file.puts "----------------Last Month's #{line}.---------------"
-		monthly_file.puts File.readlines("#{last_month_dir}/#{line}")
-		monthly_file.puts "---------------This Month's #{line}.----------------"
-		monthly_file.puts File.readlines("#{this_month_dir}/#{line}")
-	end
-	monthly_file.puts "-----------End of changes.-----------"
-	monthly_file.close
-	result_mail = Mail.new do
-   		from    'name@someserver.org'
-   		to      'name@someserver.org'
-   		subject 'Monthly Scan Results'
-   		body    File.read("#{path}/resultsmail.txt")
-  		add_file "#{this_month_dir}/monthlyreport.txt"
-		add_file "#{this_month_dir}/ndiff.txt"
-	end
-	result_mail.deliver!
+  monthly_file = File.new("#{this_month_dir}/monthlyreport.txt", "a")
+  monthly_file.puts "Nmap Scan results for #{this_month}, #{year}."
+  monthly_file.puts "Different results from last month only."
+  different_files.each do |line|
+    monthly_file.puts "----------------Last Month's #{line}.---------------"
+    monthly_file.puts File.readlines("#{last_month_dir}/#{line}")
+    monthly_file.puts "---------------This Month's #{line}.----------------"
+    monthly_file.puts File.readlines("#{this_month_dir}/#{line}")
+  end
+  monthly_file.puts "-----------End of changes.-----------"
+  monthly_file.close
+  result_mail = Mail.new do
+       from    'name@someserver.org'
+       to      'name@someserver.org'
+       subject 'Monthly Scan Results'
+       body    File.read("#{path}/resultsmail.txt")
+      add_file "#{this_month_dir}/monthlyreport.txt"
+    add_file "#{this_month_dir}/ndiff.txt"
+  end
+  result_mail.deliver!
 else
 no_change_mail = Mail.new do
    from    'name@someserver.org'
    to      'name@someserver.org'
    subject 'Monthy Scan Results'
    body    File.read("#{path}/nochangemail.txt")
-	add_file "#{this_month_dir}/ndiff.txt"
+  add_file "#{this_month_dir}/ndiff.txt"
 end
 no_change_mail.deliver!
 end
